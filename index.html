@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArsipCloud - Digital Archive App</title>
+    
+    <!-- Meta untuk Mobile/PWA -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ArsipCloud">
+    
+    <!-- Ikon Aplikasi -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2965/2965333.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2965/2965333.png">
+
+    <!-- Web App Manifest (Dihasilkan via Script) -->
+    <link rel="manifest" id="pwa-manifest">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 z-[200] bg-indigo-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 border border-indigo-100 fade-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 text-white rounded-2xl shadow-lg mb-4">
+                    <i class="fas fa-shield-alt text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">ArsipCloud Login</h2>
+                <p class="text-gray-500">Akses aman arsip digital Anda</p>
+            </div>
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email Pengguna</label>
+                    <input type="email" id="loginEmail" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="user@disdik.com">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-sm font-semibold text-gray-700">Kata Sandi</label>
+                        <button type="button" id="btnForgotPassword" class="text-xs text-indigo-600 hover:underline">Lupa Kata Sandi?</button>
+                    </div>
+                    <input type="password" id="loginPass" required class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="••••••••">
+                </div>
+                <button type="submit" id="btnLogin" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition flex items-center justify-center">
+                    <span>Masuk Aplikasi</span>
+                </button>
+            </form>
+            
+            <!-- Kontainer Tombol Instalasi (Muncul jika didukung browser) -->
+            <div id="installApp" class="hidden mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
+                <p class="text-xs text-indigo-700 mb-2 font-medium">Aplikasi siap dipasang di layar utama!</p>
+                <button id="installBtn" class="text-sm bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition w-full">
+                    <i class="fas fa-download mr-2"></i>Pasang Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="mainDashboard" class="hidden">
+        <nav class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                    <h1 class="text-lg font-bold">ArsipCloud</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="userInfo" class="hidden md:block text-[10px] bg-indigo-800 px-3 py-1 rounded-full border border-indigo-500 max-w-[120px] truncate uppercase tracking-widest">
+                        ...
+                    </div>
+                    <button onclick="handleLogout()" class="bg-white/10 hover:bg-white/20 w-10 h-10 rounded-xl transition flex items-center justify-center">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-l-indigo-500 flex items-center space-x-4">
+                    <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i class="fas fa-folder text-xl"></i></div>
+                    <div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Total File</p><h3 class="text-xl font-bold" id="stat-total">0</h3></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-l-blue-500 flex items-center space-x-4">
+                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i class="fab fa-google-drive text-xl"></i></div>
+                    <div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Drive</p><h3 class="text-xl font-bold" id="stat-drive">0</h3></div>
+                </div>
+                <div class="glass-card p-5 rounded-2xl shadow-sm border-l-4 border-l-emerald-500 flex items-center space-x-4">
+                    <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600"><i class="fas fa-table text-xl"></i></div>
+                    <div><p class="text-xs text-gray-500 uppercase font-bold tracking-wider">Sheets</p><h3 class="text-xl font-bold" id="stat-sheet">0</h3></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="relative flex-1">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" placeholder="Cari arsip..." class="w-full pl-12 pr-4 py-3 rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <button onclick="openModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-indigo-200 shadow-xl hover:bg-indigo-700 transition flex items-center justify-center space-x-2">
+                    <i class="fas fa-plus-circle"></i><span>Arsip Baru</span>
+                </button>
+            </div>
+
+            <div class="glass-card rounded-3xl overflow-hidden border-none shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50/50">
+                            <tr>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Nama Dokumen</th>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Kategori</th>
+                                <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archiveTableBody" class="divide-y divide-gray-50"></tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden py-16 text-center text-gray-300">
+                    <i class="fas fa-box-open text-5xl mb-3"></i>
+                    <p class="text-sm">Belum ada arsip yang disimpan</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="archiveModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden fade-in">
+            <div class="bg-indigo-600 p-5 text-white flex justify-between items-center">
+                <h3 class="font-bold" id="modalTitle">Tambah Arsip</h3>
+                <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center bg-white/10 rounded-full"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="archiveForm" class="p-6 space-y-4">
+                <input type="hidden" id="editId">
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Nama File</label>
+                    <input type="text" id="docName" required class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Kategori</label>
+                    <select id="docCategory" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="Keuangan">Keuangan</option>
+                        <option value="SDM">SDM</option>
+                        <option value="Umum">Umum</option>
+                        <option value="Pribadi">Pribadi</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer border-2 border-gray-100 p-3 rounded-xl flex items-center justify-center space-x-2 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 transition">
+                        <input type="radio" name="linkType" value="Drive" class="hidden" checked>
+                        <i class="fab fa-google-drive"></i><span class="text-sm font-bold">Drive</span>
+                    </label>
+                    <label class="cursor-pointer border-2 border-gray-100 p-3 rounded-xl flex items-center justify-center space-x-2 has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 transition">
+                        <input type="radio" name="linkType" value="Sheet" class="hidden">
+                        <i class="fas fa-file-excel"></i><span class="text-sm font-bold">Sheet</span>
+                    </label>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase">Link URL</label>
+                    <input type="url" id="docUrl" required class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://...">
+                </div>
+                <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg mt-2">Simpan Arsip</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl transform translate-y-32 transition duration-300 z-[300] flex items-center space-x-3 text-sm">
+        <i class="fas fa-check-circle text-green-400"></i><span id="toastMessage"></span>
+    </div>
+
+    <!-- Script Utama -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'disdik-johar-secure';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let user = null;
+        let allArchives = [];
+        let unsubscribeSync = null;
+
+        // --- TEKNIK JITU PWA DALAM 1 FILE ---
+        const setupPWA = () => {
+            // 1. Buat Manifest Otomatis
+            const manifest = {
+                "name": "ArsipCloud Digital",
+                "short_name": "ArsipCloud",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#ffffff",
+                "theme_color": "#4f46e5",
+                "icons": [{
+                    "src": "https://cdn-icons-png.flaticon.com/512/2965/2965333.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }]
+            };
+            const stringManifest = JSON.stringify(manifest);
+            const blob = new Blob([stringManifest], {type: 'application/json'});
+            const manifestURL = URL.createObjectURL(blob);
+            document.querySelector('#pwa-manifest').setAttribute('href', manifestURL);
+
+            // 2. Registrasi Service Worker via Blob
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE_NAME = 'arsipcloud-v1';
+                    self.addEventListener('install', (event) => {
+                        self.skipWaiting();
+                    });
+                    self.addEventListener('fetch', (event) => {
+                        event.respondWith(fetch(event.request).catch(() => {}));
+                    });
+                `;
+                const swBlob = new Blob([swCode], {type: 'application/javascript'});
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl).then(() => {
+                    console.log("PWA Active");
+                }).catch(err => console.log("SW Error", err));
+            }
+        };
+        
+        window.onload = setupPWA;
+
+        // Listener untuk tombol Install
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installApp').classList.remove('hidden');
+        });
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('installApp').classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        // --- AUTH & DATA LOGIC ---
+        const loginForm = document.getElementById('loginForm');
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            const btn = document.getElementById('btnLogin');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
+
+            try {
+                try {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch (err) {
+                    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+                        await createUserWithEmailAndPassword(auth, email, pass);
+                    } else throw err;
+                }
+            } catch (err) {
+                showToast("Email/Sandi salah", "fa-times-circle", "text-red-400");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Masuk Aplikasi";
+            }
+        };
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainDashboard').classList.remove('hidden');
+                document.getElementById('userInfo').innerText = user.email.split('@')[0];
+                startSync();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainDashboard').classList.add('hidden');
+            }
+        });
+
+        function startSync() {
+            if (!user) return;
+            const archiveCol = collection(db, 'artifacts', appId, 'users', user.uid, 'archives');
+            unsubscribeSync = onSnapshot(archiveCol, (snap) => {
+                allArchives = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderTable();
+            }, (err) => console.error("Sync error:", err));
+        }
+
+        document.getElementById('archiveForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            const editId = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('docName').value,
+                category: document.getElementById('docCategory').value,
+                type: document.querySelector('input[name="linkType"]:checked').value,
+                url: document.getElementById('docUrl').value,
+                updatedAt: serverTimestamp()
+            };
+            try {
+                if (editId) await updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'archives', editId), data);
+                else { data.createdAt = serverTimestamp(); await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'archives'), data); }
+                closeModal();
+                showToast("Berhasil disimpan");
+            } catch (err) { showToast("Gagal simpan"); }
+            finally { btn.disabled = false; }
+        };
+
+        window.handleLogout = () => { if(confirm("Keluar?")) { if(unsubscribeSync) unsubscribeSync(); signOut(auth); } };
+        window.deleteArchive = async (id) => { if (confirm("Hapus file?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'archives', id)); };
+
+        function renderTable() {
+            const body = document.getElementById('archiveTableBody');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allArchives.filter(i => i.name?.toLowerCase().includes(search));
+            body.innerHTML = '';
+            document.getElementById('emptyState').classList.toggle('hidden', filtered.length > 0);
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-gray-700">${item.name}</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-tighter">${item.type}</div>
+                    </td>
+                    <td class="px-6 py-4"><span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md uppercase">${item.category}</span></td>
+                    <td class="px-6 py-4 text-right space-x-1">
+                        <a href="${item.url}" target="_blank" class="w-8 h-8 inline-flex items-center justify-center bg-gray-50 text-indigo-600 rounded-lg"><i class="fas fa-external-link-alt text-xs"></i></a>
+                        <button onclick="window.editArchive('${item.id}')" class="w-8 h-8 bg-gray-50 text-amber-600 rounded-lg"><i class="fas fa-edit text-xs"></i></button>
+                        <button onclick="window.deleteArchive('${item.id}')" class="w-8 h-8 bg-gray-50 text-rose-500 rounded-lg"><i class="fas fa-trash text-xs"></i></button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+            updateStats();
+        }
+
+        window.editArchive = (id) => {
+            const i = allArchives.find(a => a.id === id);
+            document.getElementById('modalTitle').innerText = "Edit Arsip";
+            document.getElementById('editId').value = id;
+            document.getElementById('docName').value = i.name;
+            document.getElementById('docCategory').value = i.category;
+            document.getElementById('docUrl').value = i.url;
+            document.querySelectorAll('input[name="linkType"]').forEach(r => { if(r.value === i.type) r.checked = true; });
+            document.getElementById('archiveModal').classList.remove('hidden');
+        };
+
+        window.openModal = () => {
+            document.getElementById('modalTitle').innerText = "Arsip Baru";
+            document.getElementById('editId').value = "";
+            document.getElementById('archiveForm').reset();
+            document.getElementById('archiveModal').classList.remove('hidden');
+        };
+
+        window.closeModal = () => document.getElementById('archiveModal').classList.add('hidden');
+        document.getElementById('searchInput').oninput = renderTable;
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = allArchives.length;
+            document.getElementById('stat-drive').innerText = allArchives.filter(a => a.type === 'Drive').length;
+            document.getElementById('stat-sheet').innerText = allArchives.filter(a => a.type === 'Sheet').length;
+        }
+
+        function showToast(m, icon="fa-check-circle", c="text-green-400") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = m;
+            t.querySelector('i').className = `fas ${icon} ${c}`;
+            t.classList.remove('translate-y-32');
+            setTimeout(() => t.classList.add('translate-y-32'), 3000);
+        }
+    </script>
+</body>
+</html>
